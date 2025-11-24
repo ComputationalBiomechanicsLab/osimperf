@@ -548,9 +548,14 @@ def _draw_fig_overlays(events, agg, ax):
         ax.annotate("events:", xy=(x0, ax.get_ylim()[1]), xytext=(-6, 0), textcoords="offset points", fontsize=9, ha="right", va="bottom")
 
 def plot_figure1(config : Config, result_csv_path, output_image_path):
-    benchmark_name = "RajagopalDropUndamped"
 
-    # These are significant events w.r.t. the profiler-led (i.e. traditional) performance improvements
+    # Extra top-level plotting configuration variables
+    benchmark_name = "RajagopalDropUndamped"
+    fixed_model_benchmark = "RajagopalDrop"
+    draw_overlays = True
+    list_event_labels = True
+
+    # Significant events w.r.t. the performance improvements during the CZI project
     significant_events = [
         {"time": pd.to_datetime("2020-05-01"), "label": "Project Start", "yattop": True, "drawline": True},
         # {"time": pd.to_datetime("2020-06-23"), "label": "#2806: Cache controllers", "drawline": True},
@@ -558,31 +563,64 @@ def plot_figure1(config : Config, result_csv_path, output_image_path):
         {"time": pd.to_datetime("2020-12-18"), "label": "#2908: Reduce string construction", "drawline": True},
         {"time": pd.to_datetime("2022-02-03"), "label": "#3125: Tweak wrap cylinder calculations", "drawline": True},
         {"time": pd.to_datetime("2023-05-16"), "label": "#3442: Deduplicate muscle curves", "drawline": True},
+        {"time": pd.to_datetime("2023-10-24"), "label": "Model Bottleneck Identified", "drawline": True},
         {"time": pd.to_datetime("2024-01-01"), "label": "#3653: Calculate value & derivative", "drawline": True},
         {"time": pd.to_datetime("2024-03-19"), "label": "#3745: (regression)", "yatbot": True, "drawline": True},
         {"time": pd.to_datetime("2024-07-14"), "label": "#3782: ComponentPath Optimization", "drawline": True},
         {"time": pd.to_datetime("2025-10-01"), "label": "Project End", "yattop": True, "drawline": True},
     ]
 
-    # Handle data
+    if draw_overlays and any({True for el in significant_events if el.get("drawline")}):
+        h_pad = 0.11
+    else:
+        h_pad = 0.12
+
+    if list_event_labels:
+        figsize = (10, 4)
+    else:
+        figsize = (6.4, 4.8)
+
+    # Process main series (RajagopalDrop) as an aggregated dataframe
     df = pd.read_csv(result_csv_path)
     df = df[df["benchmark_name"] == benchmark_name]                  # filter by benchmark
     df["commit_time"] = pd.to_datetime(df["commit_time"], unit="s")  # parse unix timestamps
     agg = df.groupby("commit_time")["runtime"].agg(["mean", "std"])
 
     # Create top-level figure
-    fig, ax = plt.subplots(constrained_layout=True)
-    fig.suptitle("Profiler-Led Code Optimizations Doubled Simulation Performance")
-    fig.set_constrained_layout_pads(h_pad=0.025)  # Increase padding between subtitle and figure title to account for the subtitle padding
+    fig, ax = plt.subplots(figsize=figsize, constrained_layout=True)
+    fig.suptitle("Code Optimization Doubled Performance, Model Optimization Tripled It")
+    fig.text(0.5, 0.90, f"Forward Dynamic Simulation of Rajagopal2015.osim (2 seconds sim time, 8 repeats)", fontsize=9, ha="center")
+    fig.set_constrained_layout_pads(h_pad=h_pad)  # Increase padding between subtitle and figure title to account for the subtitle padding
 
-    ax.errorbar(x=agg.index, y=agg["mean"], yerr=agg["std"], fmt="o")
+    # Plot main series
+    ax.errorbar(x=agg.index, y=agg["mean"], yerr=agg["std"], fmt="o", label="Rajagopal2015.osim")
     ax.set_xlabel("Commit Date on OpenSim-Core")
     ax.set_ylabel("Mean Runtime [seconds]")
-    ax.set_title(f"Rajagopal2015.osim, Forward Dynamic Simulation (2 seconds simulation time)", fontsize=9, pad=15)
+
+    # Plot secondary series
+    if fixed_model_benchmark:
+        df_fixed = pd.read_csv(result_csv_path)
+        df_fixed = df_fixed[df_fixed["benchmark_name"] == fixed_model_benchmark]  # filter by benchmark
+        df_fixed["commit_time"] = pd.to_datetime(df_fixed["commit_time"], unit="s")  # parse unix timestamps
+        df_fixed = df_fixed[df_fixed["commit_time"] >= pd.to_datetime("2023-10-24")]
+        agg_fixed = df_fixed.groupby("commit_time")["runtime"].agg(["mean", "std"])
+        ax.errorbar(x=agg_fixed.index, y=agg_fixed["mean"], yerr=agg_fixed["std"], fmt="o", label="Rajagopal2015.osim, after fixing bottlenecks")
+
+    # Draw text list of events to the rhs of the plot
+    if list_event_labels:
+        text = "Events:\n"
+        for i in range(0, len(significant_events)):
+            text += f"  {chr(ord("a") + i)}) {significant_events[i]["label"]}\n"
+        ax.text(1.02, 0.5, text, transform=ax.transAxes, va="center", ha="left")
 
     # Draw overlays over the plot
-    _draw_fig_overlays(significant_events, agg, ax)
+    if draw_overlays:
+        _draw_fig_overlays(significant_events, agg, ax)
 
+    if fixed_model_benchmark:
+        plt.legend()
+
+    plt.show()
     plt.savefig(output_image_path, dpi=300, bbox_inches="tight")
 
 def plot_figure2(config : Config, result_csv_path, output_image_path):
