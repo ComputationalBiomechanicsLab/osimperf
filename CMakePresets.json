@@ -2,8 +2,8 @@
     "version": 3,
     "configurePresets": [
         {
-            "name": "osimperf2-RelWithDebInfo",
-            "displayName": "osimperf2-RelWithDebInfo",
+            "name": "osimperf-RelWithDebInfo",
+            "displayName": "osimperf-RelWithDebInfo",
             "description": "Default configure preset for IDE users (you might want to edit CMAKE_PREFIX_PATH, though)",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/RelWithDebInfo",
@@ -16,8 +16,8 @@
     ],
     "buildPresets": [
         {
-            "name": "osimperf2-RelWithDebInfo",
-            "configurePreset": "osimperf2-RelWithDebInfo"
+            "name": "osimperf-RelWithDebInfo",
+            "configurePreset": "osimperf-RelWithDebInfo"
         }
     ]
 }

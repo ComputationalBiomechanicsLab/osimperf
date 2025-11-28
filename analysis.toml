@@ -1,7 +1,7 @@
-# Paths to install directories of opensim-core (+ osimperf2-runner) that
+# Paths to install directories of opensim-core (+ osimperf-runner) that
 # should be measured. Globs (e.g. dir/*) are expanded.
 #
-# Each directory must contain a built `osimperf2-runner` at `$dir/bin/osimperf2-runner`
+# Each directory must contain a built `osimperf-runner` at `$dir/bin/osimperf-runner`
 commits = ["opensim-core_installs/*"]
 
 # A list of benchmarks that should be analyzed against each commit
